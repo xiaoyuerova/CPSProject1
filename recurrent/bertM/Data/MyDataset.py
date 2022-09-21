@@ -4,6 +4,7 @@ import pandas as pd
 
 class MyDataset(data.Dataset):
     def __init__(self, df: pd.DataFrame):
+        df = df[~df['Text'].isna()]
         df.reset_index(inplace=True)
         self.df = df
 

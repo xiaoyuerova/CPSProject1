@@ -1,8 +1,8 @@
+# import os
+# os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 import os
-os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-
 import time
+import random
 import pandas as pd
 import torch
 from sklearn.metrics import cohen_kappa_score, classification_report
@@ -10,14 +10,14 @@ import torch.nn as nn
 from transformers import logging
 from Data import *
 from model import CpsBertModel
-from parameters import parameters
 
-
+random.seed(0)
 logging.set_verbosity_warning()
 logging.set_verbosity_error()
 
 # 准备模型
 model = CpsBertModel()
+model.to(parameters.device)
 
 total = 0
 total2 = 0
@@ -29,7 +29,7 @@ print("Number of parameter: %.2fM" % (total / 1e6))
 print("Number of training parameter: %.2fM" % (total2 / 1e6))
 
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=0.5)
+optimizer = torch.optim.SGD(model.parameters(), lr=parameters.lr)
 
 
 def evaluate(data: Data, epoch: int):
@@ -53,8 +53,8 @@ def evaluate(data: Data, epoch: int):
             if i:
                 correct += 1
 
-    #         y_pred.extend(predict.to('cpu'))
-    #         y_true.extend(label.to('cpu'))
+        y_pred.extend(predict.to('cpu'))
+        y_true.extend(label.to('cpu'))
 
     batches = data.dataloader.__len__()
     cur_loss = total_loss / batches
@@ -67,7 +67,7 @@ def evaluate(data: Data, epoch: int):
             elapsed * 1000 / batches, cur_loss,
             correct / total * 100,
             kappa))
-    print(classification_report(y_true, y_pred, target_names=parameters.all_names))
+    print(classification_report(y_true, y_pred, target_names=parameters.target_names))
     return correct / total
 
 
@@ -80,6 +80,7 @@ def train(train_data: Data, epoch: int):
     for idx, (label, text) in enumerate(train_data.dataloader):
         optimizer.zero_grad()
         output = model(text)
+        # print('output', output.argmax(1))
 
         total += label.size(0)
         for i in output.argmax(1).eq(label):
@@ -106,8 +107,10 @@ def train(train_data: Data, epoch: int):
 
 
 def main():
-    df_train = pd.read_csv('../data/single-sentence-prediction/train_data.csv')
-    df_test = pd.read_csv('../data/single-sentence-prediction/test_data.csv')
+    dir_train = os.path.join(os.path.dirname(__file__), '../../data/single-sentence-prediction/train_data.csv')
+    dir_test = os.path.join(os.path.dirname(__file__), '../../data/single-sentence-prediction/test_data.csv')
+    df_train = pd.read_csv(dir_train)
+    df_test = pd.read_csv(dir_test)
 
     # 初始化数据
     dataset_train = MyDataset(df_train)

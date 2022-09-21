@@ -1,6 +1,7 @@
 import torch.nn as nn
 from transformers import logging
 from transformers import BertModel
+from Data import tokenizer
 
 logging.set_verbosity_warning()
 logging.set_verbosity_error()
@@ -10,6 +11,7 @@ class CpsBertModel(nn.Module):
     def __init__(self):
         super(CpsBertModel, self).__init__()
         self.bert = BertModel.from_pretrained("bert-base-uncased")
+        self.bert.resize_token_embeddings(len(tokenizer))
         self.linear = nn.Linear(768, 8)
         self.init_weights()
 
@@ -20,6 +22,8 @@ class CpsBertModel(nn.Module):
         self.linear.bias.data.zero_()
 
     def forward(self, _input):
-        pooler_output = self.bert(**_input)[1]
-        y = self.decoder(pooler_output)
+        out = self.bert(**_input)
+        # print('out[1]', out[1].size())
+        pooler_output = out[1]
+        y = self.linear(pooler_output)
         return y

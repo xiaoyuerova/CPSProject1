@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from transformers import BertTokenizer
+from recurrent.bertM.Data.parameters import parameters
 
 special_tokens = {'additional_special_tokens': ['[R_zero]', '[R_one]', '[R_two]', '[R_three]',
                                                 '[voltage]', '[current]', '[number]']}
@@ -15,9 +16,21 @@ class Data:
         self.dataloader = DataLoader(dataset, batch_size=64, shuffle=False, collate_fn=self.collate_batch)
 
     def collate_batch(self, batch):
-        label_list, text_list = [], []
-        for (labels, texts) in batch:
-            label_list.append(self.label_pipeline(labels))
-            text_list.append(self.tokenizer(texts, return_tensors='pt'))
-        label_list = torch.tensor(label_list, dtype=torch.int64)
-        return label_list, text_list
+        labels, texts = [], []
+        try:
+            for (label, text) in batch:
+                labels.append(label)
+                texts.append(text)
+            labels = self.label_pipeline(labels)
+            inputs = self.tokenizer(texts,
+                                    return_tensors='pt',
+                                    padding=True,
+                                    truncation=True,
+                                    max_length=parameters.max_length,
+                                    )
+            return torch.tensor(labels, dtype=torch.int64).to(parameters.device), inputs.to(parameters.device)
+
+        except:
+            print('texts:', texts)
+            for text in texts:
+                print(type(text), text)
