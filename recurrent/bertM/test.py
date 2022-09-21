@@ -1,14 +1,17 @@
+import os
+os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+
+
 import time
 import pandas as pd
 import torch
 from sklearn.metrics import cohen_kappa_score, classification_report
 import torch.nn as nn
-
+from transformers import logging
 from Data import *
 from model import CpsBertModel
 from parameters import parameters
 
-from transformers import logging
 
 logging.set_verbosity_warning()
 logging.set_verbosity_error()
@@ -50,8 +53,8 @@ def evaluate(data: Data, epoch: int):
             if i:
                 correct += 1
 
-#         y_pred.extend(predict.to('cpu'))
-#         y_true.extend(label.to('cpu'))
+    #         y_pred.extend(predict.to('cpu'))
+    #         y_true.extend(label.to('cpu'))
 
     batches = data.dataloader.__len__()
     cur_loss = total_loss / batches

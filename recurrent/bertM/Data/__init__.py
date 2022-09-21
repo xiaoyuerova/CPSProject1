@@ -1,5 +1,5 @@
 from Data import Data
-from MyDataset import MyDataset
+from recurrent.bertM.Data.MyDataset import MyDataset
 
 __all__ = [
     'Data', 'MyDataset'
