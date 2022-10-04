@@ -1,7 +1,7 @@
 import torch.nn as nn
 from transformers import logging
 from transformers import BertModel
-from Data import tokenizer
+from recurrent.bertM.Data import tokenizer
 
 logging.set_verbosity_warning()
 logging.set_verbosity_error()

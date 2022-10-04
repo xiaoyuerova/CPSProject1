@@ -1,1 +1,4 @@
 /data/
+/outputs/
+/recurrent/KNN/wiki-news-300d-1M.vec
+/recurrent/RF/wiki-news-300d-1M.vec

@@ -1,129 +1,50 @@
+import math
 import os
 # os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-
-import time
+import json
 import random
 import pandas as pd
 import torch
-from sklearn.metrics import cohen_kappa_score, classification_report
 import torch.nn as nn
 from transformers import logging
-from Data import *
-from model import CpsBertModel
+from recurrent.bertM.Data import *
+from recurrent.bertM.Model import *
+from Utils import PROJECT_NAME, init_outputs_dir, load_data, print_model
 
 random.seed(0)
 logging.set_verbosity_warning()
 logging.set_verbosity_error()
 
-# 准备模型
-model = CpsBertModel()
-model.to(parameters.device)
-
-total = 0
-total2 = 0
-for param in model.parameters():
-    total += param.nelement()
-    if param.requires_grad:
-        total2 += param.nelement()
-print("Number of parameter: %.2fM" % (total / 1e6))
-print("Number of training parameter: %.2fM" % (total2 / 1e6))
-
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.SGD(model.parameters(), lr=parameters.lr)
+# 输出
+outputs = pd.DataFrame(columns=['Round', 'Epoch', 'Accuracy', 'Kappa'])
+cr_results = []  # classification_report输出结果保存
 
 
-def evaluate(data: Data, epoch: int):
-    total_loss = 0
-    correct = 0.0
-    total = 0.0
-    y_pred, y_true = [], []
-    start_time = time.time()
-    model.eval()
-    for idx, (label, text) in enumerate(data.dataloader):
-        optimizer.zero_grad()
-        output = model(text)
+def evaluate(evaluate_round: int, prop: str, dir_num: str):
+    # 准备模型
+    model = CpsBertModel()
+    model.to(parameters.device)
+    print_model(model)
 
-        total += label.size(0)
-
-        loss = criterion(output, label)
-        total_loss += loss.item()
-
-        predict = output.argmax(1)
-        for i in predict.eq(label):
-            if i:
-                correct += 1
-
-        y_pred.extend(predict.to('cpu'))
-        y_true.extend(label.to('cpu'))
-
-    batches = data.dataloader.__len__()
-    cur_loss = total_loss / batches
-    elapsed = time.time() - start_time
-    kappa = cohen_kappa_score(y_pred, y_true)
-    print(
-        '| epoch {:3d} | {:5d} batches | ms/batch {:5.5f} | loss {:5.2f} | '
-        'accuracy {:8.2f}% | Kappa {:8.4f}'.format(
-            epoch + 1, batches,
-            elapsed * 1000 / batches, cur_loss,
-            correct / total * 100,
-            kappa))
-    print(classification_report(y_true, y_pred, target_names=parameters.target_names))
-    return correct / total
-
-
-def train(train_data: Data, epoch: int):
-    total_loss = 0
-    correct = 0.0
-    total = 0.0
-    start_time = time.time()
-    model.train()
-    for idx, (label, text) in enumerate(train_data.dataloader):
-        optimizer.zero_grad()
-        output = model(text)
-        # print('output', output.argmax(1))
-
-        total += label.size(0)
-        for i in output.argmax(1).eq(label):
-            if i:
-                correct += 1
-
-        loss = criterion(output, label)
-        loss.backward()
-        optimizer.step()
-
-        total_loss += loss.item()
-
-        log_interval = parameters.log_interval
-        if idx % log_interval == 0 and idx > 0:
-            cur_loss = total_loss / log_interval
-            elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.5f} | ms/batch {:5.5f} | '
-                  'loss {:5.2f} | accuracy {:8.2f}%'.format(epoch + 1, idx, train_data.dataloader.__len__(),
-                                                            optimizer.param_groups[0]['lr'],
-                                                            elapsed * 1000 / log_interval, cur_loss,
-                                                            correct / total * 100))
-            total_loss = 0
-            start_time = time.time()
-
-
-def main():
-    dir_train = os.path.join(os.path.dirname(__file__), '../../data/single-sentence-prediction/train_data.csv')
-    dir_test = os.path.join(os.path.dirname(__file__), '../../data/single-sentence-prediction/test_data.csv')
-    df_train = pd.read_csv(dir_train)
-    df_test = pd.read_csv(dir_test)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=parameters.lr)
 
     # 初始化数据
-    dataset_train = MyDataset(df_train)
-    data_train = Data(dataset_train)
-
-    dataset_test = MyDataset(df_test)
-    data_test = Data(dataset_test)
+    data_train, data_test = load_data(prop, dir_num=dir_num)
+    data_train = Data(MyDataset(data_train))
+    data_test = Data(MyDataset(data_test))
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 1.0, gamma=0.1)
     total_accu = None
-    for epoch in range(10):
-        train(data_train, epoch)
-        accu_val = evaluate(data_test, epoch)
+    for epoch in range(parameters.epochs):
+        train(epoch, data_train, model, criterion, optimizer)
+        accu_val, kappa, cr_result = test(epoch, data_test, model, criterion, optimizer)
+
+        # 保存输出结果
+        outputs.loc[len(outputs)] = [evaluate_round + 1, epoch, accu_val, kappa]
+        cr_results.append({'evaluate_round': evaluate_round,
+                           'epoch': epoch,
+                           'cr_result': cr_result})
         if total_accu is not None and total_accu > accu_val:
             print('scheduler runs')
             scheduler.step()
@@ -132,5 +53,43 @@ def main():
     return model
 
 
+def main(numbers=None, props=None, dir_num=None):
+    """
+    运行前需要确定数据集。更改数据集后要注意修改以下几个参数：
+    :param numbers: 输出保存文件的编号
+        numbers = ['3-2']
+    :param props: 数据在训练集中的比例
+        如：props = ['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p']
+    :param dir_num: 数据集所在位置small-sample-datasets（None对应的默认结果）等
+        如：dir_num = 2，对应small-sample-datasets2
+    :return:
+    """
+    if props is None:
+        props = []
+    if numbers is None:
+        numbers = []
+    for number in numbers:
+        for i in range(len(props)):
+            print('**第' + str(i + 1) + '轮**')
+            evaluate(i, props[i], dir_num)
+        print(outputs)
+
+        # 初始化输出文件的路径
+        outputs_dir = init_outputs_dir(
+            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace(r'/', '-'))
+
+        # 保存accuracy和kappa
+        outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)
+
+        # 保存classification_report的输出结果
+        f = open(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.json'.format(number), 'w')
+        f.write(json.dumps(cr_results))
+        f.close()
+
+
 if __name__ == '__main__':
-    main()
+    main(
+        numbers=['3-t'],
+        props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
+        dir_num=None
+    )

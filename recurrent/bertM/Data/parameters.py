@@ -6,13 +6,13 @@ class Parameters:
     max_length = 16
 
     # 喂数据的batch size
-    Batch_size = 8
+    # Batch_size = 8
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     target_names = ['SESU', 'SMC', 'SSI', 'SN', 'CRF', 'CP', 'CEC', 'CMC']
 
-    epochs = 15
+    epochs = 10
 
     lr = 2e-3
 
