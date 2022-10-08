@@ -1,17 +1,17 @@
 import json
 import os
 
-from textLSTM import *
+from smallSample.textLSTM.textLSTM import *
 import pandas as pd
 import numpy as np
 import gensim
-from m import BOW
+from smallSample.textLSTM.m import BOW
 import copy
 import torch.utils.data as Data
 from torch.optim import Adam
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, classification_report, cohen_kappa_score
-from Utils import init_outputs_dir, PROJECT_NAME, load_data
+from Utils import init_outputs_dir, load_data
 
 BATCH_SIZE = 256
 EPOCH = 10
@@ -27,9 +27,10 @@ def evaluate(evaluate_round: int, prop: str, dir_num=None):
 
     x = train_data['Text'].append(test_data['Text'], ignore_index=True)
     y = train_data['Label'].append(test_data['Label'], ignore_index=True)
-    bow = BOW(x.tolist(), min_count=1, maxlen=16)
+    bow = BOW(x.tolist(), min_count=1, maxlen=20)
     vocab_size = len(bow.word2idx)
-    word2vec = gensim.models.KeyedVectors.load_word2vec_format('../wiki-news-300d-1M.vec', encoding='utf-8')
+    src_dir = os.path.join(os.path.dirname(__file__), '../../data/src/wiki-news-300d-1M.vec')
+    word2vec = gensim.models.KeyedVectors.load_word2vec_format(src_dir, encoding='utf-8')
     embedding_matrix = np.zeros((vocab_size + 1, 300))
     for key, value in bow.word2idx.items():
         if key in word2vec.key_to_index:
@@ -48,7 +49,7 @@ def evaluate(evaluate_round: int, prop: str, dir_num=None):
     train_loader = Data.DataLoader(
         dataset=torch_dataset,  # torch TensorDataset format
         batch_size=BATCH_SIZE,  # mini batch size
-        shuffle=False,  # random shuffle for training
+        shuffle=True,  # random shuffle for training
         num_workers=0,  # subprocesses for loading data
     )
     # 网络结构、损失函数、优化器初始化
@@ -103,9 +104,13 @@ def main(numbers=None, props=None, dir_num=None):
         如：props = ['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p']
     :return:
     """
+    if props is None:
+        props = []
     for number in numbers:
-        if props is None:
-            props = []
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         # 按不同的数据跑模型
         for i in range(len(props)):
             print('**第' + str(i + 1) + '轮**')
@@ -113,8 +118,7 @@ def main(numbers=None, props=None, dir_num=None):
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)
@@ -127,7 +131,7 @@ def main(numbers=None, props=None, dir_num=None):
 
 if __name__ == '__main__':
     main(
-        numbers=['3-t'],
-        props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
+        numbers=['4-t'],
+        props=['50p'],
         dir_num=None
     )

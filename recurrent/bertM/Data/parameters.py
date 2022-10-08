@@ -6,7 +6,7 @@ class Parameters:
     max_length = 16
 
     # 喂数据的batch size
-    # Batch_size = 8
+    Batch_size = 128
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

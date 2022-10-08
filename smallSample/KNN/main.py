@@ -4,13 +4,13 @@ import os
 import pandas as pd
 import numpy as np
 import gensim
-from m import BOW
+from smallSample.KNN.m import BOW
 import copy
 import torch.nn as nn
 import torch
 from sklearn.metrics import accuracy_score, classification_report, cohen_kappa_score
 from sklearn.neighbors import KNeighborsClassifier
-from Utils import print_model, init_outputs_dir, PROJECT_NAME, load_data
+from Utils import print_model, init_outputs_dir, load_data
 
 embedding_dim = 300
 use_pretrained_embedding = True
@@ -97,6 +97,10 @@ def main(numbers=None, props=None, dir_num=None):
     :return:
     """
     for number in numbers:
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         if props is None:
             props = []
         # 按不同的数据跑模型
@@ -106,8 +110,7 @@ def main(numbers=None, props=None, dir_num=None):
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)

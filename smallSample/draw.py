@@ -3,10 +3,10 @@ import math
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from Utils import PROJECT_NAME, init_outputs_dir
+from Utils import init_outputs_dir
 
 # 初始化输出文件的路径
-outputs_dir = init_outputs_dir(__file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+outputs_dir = init_outputs_dir(__file__)
 
 
 def init_dir(dirs: dict):
@@ -27,6 +27,7 @@ def calculate(base_dir: str, column: str, numbers: list):
 
 def draw(model_output_dir: dict, numbers: list, props: list, data_dir_num=None):
     dirs = init_dir(model_output_dir)
+    print(dirs)
     df = pd.DataFrame(
         {k + '_Accuracy': calculate(v, 'Accuracy', numbers) for k, v in dirs.items()})
     df['X'] = [item.replace('p', '%') for item in props]
@@ -82,12 +83,35 @@ def main(model_output_dir=None, numbers=None, props=None, data_dir_num=None):
 
 
 if __name__ == '__main__':
+    for item in ['1', '2', '3', '4', '5']:
+        main(
+            model_output_dir={
+                'Prompt': ['smallSample-Prompt-trainableVerbalizer', 'trainableVerbalizer'],
+                'Bert': ['recurrent-bertM-test', 'test'],
+                'KNN': ['smallSample-KNN-main', 'main'],
+                'Linear': ['smallSample-Linear-main', 'main'],
+                'RF': ['smallSample-RF-RF', 'RF'],
+                'textCNN': ['smallSample-textCNN-main', 'main'],
+                'textGRU': ['smallSample-textGRU-main', 'main'],
+                'textLSTM': ['smallSample-textLSTM-main', 'main'],
+            },
+            numbers=[item],
+            props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
+            data_dir_num=item
+        )
+
     main(
         model_output_dir={
-            'Prompt': ['smallSample-trainableVerbalizer', 'trainableVerbalizer'],
-            'Bert': ['recurrent-bertM-test', 'test']
+            'Prompt': ['smallSample-Prompt-trainableVerbalizer', 'trainableVerbalizer'],
+            'Bert': ['recurrent-bertM-test', 'test'],
+            'KNN': ['smallSample-KNN-main', 'main'],
+            'Linear': ['smallSample-Linear-main', 'main'],
+            'RF': ['smallSample-RF-RF', 'RF'],
+            'textCNN': ['smallSample-textCNN-main', 'main'],
+            'textGRU': ['smallSample-textGRU-main', 'main'],
+            'textLSTM': ['smallSample-textLSTM-main', 'main'],
         },
-        numbers=['3-t'],
+        numbers=['1', '2', '3', '4', '5'],
         props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
-        data_dir_num=None
+        data_dir_num=None,
     )

@@ -1,6 +1,6 @@
 import json
 import os
-from Utils import init_outputs_dir, PROJECT_NAME, load_data
+from Utils import init_outputs_dir, load_data
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.ensemble import RandomForestClassifier
@@ -54,9 +54,13 @@ def main(numbers=None, props=None, dir_num=None):
         如：props = ['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p']
     :return:
     """
+    if props is None:
+        props = []
     for number in numbers:
-        if props is None:
-            props = []
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         # 按不同的数据跑模型
         for i in range(len(props)):
             print('**第' + str(i + 1) + '轮**')
@@ -64,8 +68,7 @@ def main(numbers=None, props=None, dir_num=None):
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)

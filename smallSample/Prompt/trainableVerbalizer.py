@@ -13,13 +13,13 @@ from transformers import AdamW, logging
 import pandas as pd
 from sklearn.metrics import accuracy_score, cohen_kappa_score, classification_report
 
-from Utils import PROJECT_NAME, init_outputs_dir, load_data
+from Utils import init_outputs_dir, load_data
 
 random.seed(0)
 logging.set_verbosity_warning()
 logging.set_verbosity_error()
 
-BACH_SIZE = 128
+BACH_SIZE = 256
 
 # 输出
 outputs = pd.DataFrame(columns=['Round', 'Epoch', 'Accuracy', 'Kappa'])
@@ -160,17 +160,20 @@ def main(numbers=None, props=None, dir_num=None):
         如：props = ['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p']
     :return:
     """
+    if props is None:
+        props = []
     for number in numbers:
-        if props is None:
-            props = []
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         for i in range(len(props)):
             print('**第' + str(i + 1) + '轮**')
             evaluate(i, props[i], dir_num=dir_num)
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)
