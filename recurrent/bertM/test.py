@@ -9,7 +9,7 @@ import torch.nn as nn
 from transformers import logging
 from recurrent.bertM.Data import *
 from recurrent.bertM.Model import *
-from Utils import PROJECT_NAME, init_outputs_dir, load_data, print_model
+from Utils import init_outputs_dir, load_data, print_model
 
 random.seed(0)
 logging.set_verbosity_warning()
@@ -68,15 +68,18 @@ def main(numbers=None, props=None, dir_num=None):
         props = []
     if numbers is None:
         numbers = []
-    for number in numbers:
+    for idx, number in enumerate(numbers):
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         for i in range(len(props)):
             print('**第' + str(i + 1) + '轮**')
-            evaluate(i, props[i], dir_num)
+            evaluate(i, props[i], dir_num[idx])
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace(r'/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)
@@ -89,7 +92,7 @@ def main(numbers=None, props=None, dir_num=None):
 
 if __name__ == '__main__':
     main(
-        numbers=['3-t'],
-        props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
+        numbers=['1', '2', '3', '4', '5'],
+        props=['20p'],
         dir_num=None
     )

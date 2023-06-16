@@ -19,6 +19,5 @@ if __name__ == '__main__':
     # path = os.path.join(os.path.dirname(__file__), './outputs/{}'.format('123'))
     # print(os.path.dirname(file))
     # plt.savefig(path)
-    cr = json.load(open('outputs/recurrent-bertM-test/test3-2.json'))
-    print(cr[0])
+    print('holle')
 

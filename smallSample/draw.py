@@ -3,10 +3,10 @@ import math
 import os
 import pandas as pd
 import matplotlib.pyplot as plt
-from Utils import PROJECT_NAME, init_outputs_dir
+from Utils import init_outputs_dir
 
 # 初始化输出文件的路径
-outputs_dir = init_outputs_dir(__file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+outputs_dir = init_outputs_dir(__file__)
 
 
 def init_dir(dirs: dict):
@@ -25,8 +25,35 @@ def calculate(base_dir: str, column: str, numbers: list):
     return df.sum(axis=1) / len(df.columns)
 
 
+# def draw(model_output_dir: dict, numbers: list, props: list, data_dir_num=None):
+#     dirs = init_dir(model_output_dir)
+#     print(dirs)
+#     df = pd.DataFrame(
+#         {k + '_Accuracy': calculate(v, 'Accuracy', numbers) for k, v in dirs.items()})
+#     df['X'] = [item.replace('p', '%') for item in props]
+#     plt.close('all')
+#     plt.figure()
+#     acc_columns = df.columns.tolist()
+#     acc_columns.remove('X')
+#     df.plot('X', acc_columns, xlabel='Proportion', title='Variation of Accuracy value')
+#     file_name = 'accuracy值变化{}.png'.format(data_dir_num) if data_dir_num else 'accuracy值变化.png'
+#     plt.savefig(outputs_dir + '/{}'.format(file_name), dpi=300)
+#
+#     df = pd.DataFrame(
+#         {k + '_Kappa': calculate(v, 'Kappa', numbers) for k, v in dirs.items()})
+#     df['X'] = [item.replace('p', '%') for item in props]
+#     plt.close('all')
+#     plt.figure()
+#     acc_columns = df.columns.tolist()
+#     acc_columns.remove('X')
+#     df.plot('X', acc_columns, xlabel='Proportion', title='Variation of Kappa value')
+#     file_name = 'kappa值变化{}.png'.format(data_dir_num) if data_dir_num else 'kappa值变化.png'
+#     plt.savefig(outputs_dir + '/{}'.format(file_name), dpi=300)
+
+
 def draw(model_output_dir: dict, numbers: list, props: list, data_dir_num=None):
     dirs = init_dir(model_output_dir)
+    print(dirs)
     df = pd.DataFrame(
         {k + '_Accuracy': calculate(v, 'Accuracy', numbers) for k, v in dirs.items()})
     df['X'] = [item.replace('p', '%') for item in props]
@@ -34,7 +61,13 @@ def draw(model_output_dir: dict, numbers: list, props: list, data_dir_num=None):
     plt.figure()
     acc_columns = df.columns.tolist()
     acc_columns.remove('X')
-    df.plot('X', acc_columns, xlabel='Proportion', title='Variation of Accuracy value')
+    plt.axhline(y=0.6, ls='--', c='red')
+    for col in acc_columns:
+        plt.plot(df['X'], df[col], 'o-', label=col)
+    plt.xlabel('Proportion')
+    plt.ylabel('Accuracy')
+    plt.title('Variation of Accuracy value')
+    plt.legend()
     file_name = 'accuracy值变化{}.png'.format(data_dir_num) if data_dir_num else 'accuracy值变化.png'
     plt.savefig(outputs_dir + '/{}'.format(file_name), dpi=300)
 
@@ -45,10 +78,15 @@ def draw(model_output_dir: dict, numbers: list, props: list, data_dir_num=None):
     plt.figure()
     acc_columns = df.columns.tolist()
     acc_columns.remove('X')
-    df.plot('X', acc_columns, xlabel='Proportion', title='Variation of Kappa value')
+    plt.axhline(y=0.6, ls='--', c='red')
+    for col in acc_columns:
+        plt.plot(df['X'], df[col], 'o-', label=col)
+    plt.xlabel('Proportion')
+    plt.ylabel('Kappa')
+    plt.title('Variation of Kappa value')
+    plt.legend()
     file_name = 'kappa值变化{}.png'.format(data_dir_num) if data_dir_num else 'kappa值变化.png'
     plt.savefig(outputs_dir + '/{}'.format(file_name), dpi=300)
-    # df.to_csv(outputs_dir+'/temp.csv', index=False)
 
 
 def main(model_output_dir=None, numbers=None, props=None, data_dir_num=None):
@@ -82,12 +120,35 @@ def main(model_output_dir=None, numbers=None, props=None, data_dir_num=None):
 
 
 if __name__ == '__main__':
+    # for item in ['1', '2', '3', '4', '5']:
+    #     main(
+    #         model_output_dir={
+    #             'Prompt': ['smallSample-Prompt-trainableVerbalizer', 'trainableVerbalizer'],
+    #             'Bert': ['recurrent-bertM-test', 'test'],
+    #             'KNN': ['smallSample-KNN-main', 'main'],
+    #             'Linear': ['smallSample-Linear-main', 'main'],
+    #             'RF': ['smallSample-RF-RF', 'RF'],
+    #             'textCNN': ['smallSample-textCNN-main', 'main'],
+    #             'textGRU': ['smallSample-textGRU-main', 'main'],
+    #             'textLSTM': ['smallSample-textLSTM-main', 'main'],
+    #         },
+    #         numbers=[item],
+    #         props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
+    #         data_dir_num=item
+    #     )
+
     main(
         model_output_dir={
-            'Prompt': ['smallSample-trainableVerbalizer', 'trainableVerbalizer'],
-            'Bert': ['recurrent-bertM-test', 'test']
+            'Prompt': ['smallSample-Prompt-trainableVerbalizer', 'trainableVerbalizer'],
+            'Bert': ['recurrent-bertM-test', 'test'],
+            'KNN': ['smallSample-KNN-main', 'main'],
+            'Linear': ['smallSample-Linear-main', 'main'],
+            'RF': ['smallSample-RF-RF', 'RF'],
+            'textCNN': ['smallSample-textCNN-main', 'main'],
+            'textGRU': ['smallSample-textGRU-main', 'main'],
+            'textLSTM': ['smallSample-textLSTM-main', 'main'],
         },
-        numbers=['3-t'],
+        numbers=['kf1', 'kf2', 'kf3', 'kf4', 'kf5'],
         props=['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p'],
-        data_dir_num=None
+        data_dir_num=None,
     )

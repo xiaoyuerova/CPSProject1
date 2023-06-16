@@ -1,21 +1,21 @@
 import json
 import os
 
-from textGRU import *
+from smallSample.textGRU.textGRU import *
 import pandas as pd
 from sklearn.preprocessing import LabelEncoder
 import numpy as np
 import gensim
-from m import BOW
+from smallSample.textGRU.m import BOW
 import copy
 from sklearn.model_selection import train_test_split
 import torch.utils.data as Data
 from torch.optim import Adam
 from tqdm import notebook
 from sklearn.metrics import accuracy_score, classification_report, cohen_kappa_score
-from Utils import init_outputs_dir, PROJECT_NAME, load_data
+from Utils import init_outputs_dir, load_data
 
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 EPOCH = 10
 
 # 输出
@@ -29,7 +29,7 @@ def evaluate(evaluate_round: int, prop: str, dir_num=None):
 
     x = train_data['Text'].append(test_data['Text'], ignore_index=True)
     y = train_data['Label'].append(test_data['Label'], ignore_index=True)
-    bow = BOW(x.tolist(), min_count=1, maxlen=16)
+    bow = BOW(x.tolist(), min_count=1, maxlen=20)
     vocab_size = len(bow.word2idx)
     src_dir = os.path.join(os.path.dirname(__file__), '../../data/src/wiki-news-300d-1M.vec')
     word2vec = gensim.models.KeyedVectors.load_word2vec_format(src_dir, encoding='utf-8')
@@ -101,24 +101,30 @@ def main(numbers=None, props=None, dir_num=None):
     运行前需要确定数据集。更改数据集后要注意修改以下几个参数：
     :param numbers: 输出保存文件的编号
         numbers = ['3-2']
-    :param props: 数据集所在位置small-sample-datasets（None对应的默认结果）等
-        如：dir_num = 2，对应small-sample-datasets2
-    :param dir_num: 数据在训练集中的比例
+    :param props: 数据在训练集中的比例
         如：props = ['1p', '2p', '3p', '5p', '7p', '10p', '14p', '20p', '28p', '50p', '70p', '90p', '100p']
+    :param dir_num: 数据集所在位置small-sample-datasets（None对应的默认结果）等
+        如：dir_num = 2，对应small-sample-datasets2
     :return:
     """
-    for number in numbers:
-        if props is None:
-            props = []
+    if props is None:
+        props = []
+    if numbers is None:
+        numbers = []
+
+    for idx, number in enumerate(numbers):
+        # 清空
+        outputs.drop(outputs.index, inplace=True)
+        cr_results = []
+
         # 按不同的数据跑模型
         for i in range(len(props)):
             print('**第' + str(i + 1) + '轮**')
-            evaluate(i, props[i], dir_num=dir_num)
+            evaluate(i, props[i], dir_num=dir_num[idx])
         print(outputs)
 
         # 初始化输出文件的路径
-        outputs_dir = init_outputs_dir(
-            __file__[__file__.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-'))
+        outputs_dir = init_outputs_dir(__file__)
 
         # 保存accuracy和kappa
         outputs.to_csv(outputs_dir + r'/' + os.path.basename(__file__)[:-3] + '{}.csv'.format(number), index=False)

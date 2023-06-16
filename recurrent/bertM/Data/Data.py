@@ -13,7 +13,7 @@ class Data:
     def __init__(self, dataset):
         self.label_pipeline = lambda x: [int(item) for item in x]
         self.tokenizer = tokenizer
-        self.dataloader = DataLoader(dataset, batch_size=64, shuffle=True, collate_fn=self.collate_batch)
+        self.dataloader = DataLoader(dataset, batch_size=parameters.Batch_size, shuffle=True, collate_fn=self.collate_batch)
 
     def collate_batch(self, batch):
         labels, texts = [], []

@@ -40,7 +40,8 @@ def draw(x, y, file, x2=None, y2=None):
     plt.savefig(path)
 
 
-def init_outputs_dir(out_name: str):
+def init_outputs_dir(file: str):
+    out_name = file[file.find(PROJECT_NAME) + len(PROJECT_NAME) + 1:-3].replace('/', '-')
     outputs_dir = os.path.join(os.path.dirname(__file__), '../outputs/{}'.format(out_name))
     if not os.path.exists(outputs_dir):
         os.makedirs(outputs_dir)
